@@ -1,6 +1,7 @@
 import json
 import typing
 import dataclasses
+import inspect
 
 
 class JSONDecoder(json.JSONDecoder):
@@ -9,20 +10,18 @@ class JSONDecoder(json.JSONDecoder):
 
     def __init__(self, data_cls, **kwargs):
         super().__init__(**kwargs)
-        if not dataclasses.is_dataclass(data_cls):
+        if not (inspect.isclass(data_cls) or dataclasses.is_dataclass(data_cls)):
             raise ValueError
         self.data_cls = data_cls
 
-    def _encode_field(self, cls: dataclasses.Field, obj):
-
-        t: type = cls.type
+    def _encode_field(self, name: str, t: type, obj):
 
         # If the field is a Dataclass encode it
         if dataclasses.is_dataclass(t):
             try:
                 return self._encode_dataclass(t, obj)
             except ValueError:
-                raise ValueError("{} has to be a dict".format(cls.name))
+                raise ValueError("{} has to be a dict".format(name))
 
         origin = getattr(t, '__origin__', None)
         if origin == typing.Union:
@@ -33,7 +32,7 @@ class JSONDecoder(json.JSONDecoder):
                     try:
                         return self._encode_dataclass(arg, obj)
                     except ValueError:
-                        raise ValueError("{} has to be a dict".format(cls.name))
+                        raise ValueError("{} has to be a dict".format(name))
 
         # Verify that the object is the correct type
         if isinstance(obj, t):
@@ -56,11 +55,11 @@ class JSONDecoder(json.JSONDecoder):
             raise ValueError("dataclass {} does not contain the fields {}".format(cls, difference))
 
         # Encode all the fields to the correct type
-        kwargs = {name: self._encode_field(cls_fields[name], dct.get(name)) for name in fields}
+        kwargs = {name: self._encode_field(cls_fields[name].name, cls_fields[name].type, dct.get(name)) for name in fields}
 
         # Return the new dataclass object
         return cls(**kwargs)
 
     def raw_decode(self, s, idx=0):
         dct, edx = super().raw_decode(s, idx=idx)
-        return self._encode_dataclass(self.data_cls, dct), edx
+        return self._encode_field('', self.data_cls, dct), edx

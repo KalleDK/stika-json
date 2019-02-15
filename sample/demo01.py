@@ -25,5 +25,8 @@ p = Parent("Alice", 25, c)
 
 d = json.dumps(p, cls=JSONEncoder, indent=4)
 print(d)
+l = json.loads(d, cls=JSONDecoder, data_cls=dict)
+print(l)
+
 l = json.loads(d, cls=JSONDecoder, data_cls=Parent)
 print(l)

@@ -10,7 +10,7 @@ with open('README.md') as f:
 
 setup(
     name='stika_json',
-    version='0.9',
+    version='0.10',
     packages=find_namespace_packages(include=['stika.*']),
     url='https://github.com/KalleDK/stika-json',
     license=license_,
